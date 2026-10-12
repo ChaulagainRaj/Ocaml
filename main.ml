@@ -28,21 +28,27 @@ type evT =
 | Bool of bool 
 | String of string 
 
+(*
+(*definiamo il funzione ausiliaria per typechecking *)
+let int_plus (v1:evT) (v2:evT):evT = 
+        match (v1,v2) with 
+        |(Int n1, Int n2) -> Int(n1+n2)
+        |_-> failwith "Runtime Errore: Tipi incompatibile";;
+let int_minus (v1:evT) (v2:evT):evT = 
+        match (v1,v2) with 
+        | (Int n1, Int n2)-> Int(n1-n2)
+        |_-> failwith"Runtime Errore : Tipi incompatibile";;
+let bool_iszero (v:evT):evT = 
+        match v with
+        | Int 0 -> Bool true
+        |_-> Bool false
+let bool_isequal (v1:evT) (v2:evT):evT = 
+        match (v1,v2) with 
+        | (Int n1, Int n2)-> Bool (n1=n2)
+        |_-> failwith"Runtime Errore : Tipi incompatibile";;
+*)
 
 
-(*DEFINIAMO DI NUOVO FUNZIONE ausiliaria QUESTO VOLTA UTILIZZANDO TYPECHECK*)
-
-let int_plus (x,y) = 
-match(typecheck(TInt(x),x), typecheck(TInt(y),y),x,y) with
-| (true,true, Int(v),Int(w)) -> Int(v+w)
-| (_,_,_,_) -> raise ( RuntimeError "Wrong type")
-
-let bool_isequal (x,y) = 
-match (typecheck(TInt(x),x), typecheck(TInt(y),y),x,y) with
-|(true,true, Int(v),Int(w))-> Bool(v=w)
-|(_,_,_,_)-> raise (RuntimeError "Wrong type")
-
-(*ora definiamo il nuovo modo di controllare i tipi *)
 
 
 (*--------------------------------------------------------------------------------------*)
@@ -62,23 +68,53 @@ match x with
         | Bool(b) -> TBool
         | String(s)-> TString
 
-let typecheck ((x,y):(tname*evT))= 
-match x with 
-| TInt -> (match y with 
+let typecheck (t,typedescriptor:tname*evT):bool= 
+match t with 
+| TInt -> (match typedescriptor with 
            | Int(u)-> true
            | _-> false)
-| TBool -> (match y with 
+| TBool -> (match typedescriptor with 
             | Bool(u)-> true
             | _-> false)
-| TString -> (match y with 
+| TString -> (match typedescriptor with 
             | String(u)-> true
             | _-> false)            
                   
 
 
 
+(*--------------------------------------------------------------------------------------*)
+(* OPERAZIONE PRIMITIVE*)
+(*--------------------------------------------------------------------------------------*)
 
 
+(*DEFINIAMO DI NUOVO FUNZIONE ausiliaria QUESTO VOLTA UTILIZZANDO TYPECHECK*)
+
+let int_plus v1 v2= 
+match(typecheck(TInt,v1), typecheck(TInt,v2),v1,v2) with
+| (true,true, Int (a),Int(b)) -> Int(a+b)
+| (_,_,_,_) -> failwith  "Wrong type"
+
+let bool_isequal x y = 
+match (typecheck(TInt,x), typecheck(TInt,y),x,y) with
+|(true,true, Int(v),Int(w))-> Bool(v=w)
+|(_,_,_,_)-> failwith  "Wrong type"
+
+let int_minus(v1:evT)(v2:evT):evT = 
+match (typecheck(TInt,v1),typecheck(TInt,v2),v1,v2) with
+|(true,true,Int(a),Int(b))-> Int(a-b)
+|(_,_,_,_)-> failwith  "Wrong type"
+
+
+let bool_iszero (v) = 
+match (typecheck(TInt,v),v) with 
+|(true,Int(0))-> Bool true  
+|(true, Int(_)) -> Bool false
+| (_,_)-> failwith "Wrong type"
+
+
+
+(*ora definiamo il nuovo modo di controllare i tipi *)
 
 
 (*--------------------------------------------------------------------------------------*)
@@ -160,14 +196,11 @@ match e with
 
 (*--------------------------------------------------------------------------------------*)
 (*ORA TESTIAMO IL NOSTRO MACCHINA ASTRATTA *)
-(*--------------------------------------------------------------------------------------*)
-
 let result = eval primo_p emptyenv;;
 let res = eval second_p emptyenv;;
-
-
-
 let risultato = eval prog emptyenv    (* Restituisce Int 12 *)
+(*--------------------------------------------------------------------------------------*)
+
 
 
 
