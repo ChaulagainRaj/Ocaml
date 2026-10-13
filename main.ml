@@ -22,11 +22,20 @@ type exp =
 | Is_zero of exp
 | Is_equal of exp*exp 
 | Let of ide*exp*exp
+| Fun of ide*exp 
+| Apply of ide *exp 
 
 type evT = 
 | Int of int 
 | Bool of bool 
 | String of string 
+| Closure of ide * exp * env
+(* Closure sia il tipo restituito dalla funzione : nome della funzione 
+                                                 : il corpo della funzione 
+                                                 : ambiente in cui definito la funzione*)
+
+
+
 
 (*
 (*definiamo il funzione ausiliaria per typechecking *)
@@ -60,6 +69,7 @@ type tname =
 | TInt 
 | TBool
 | TString 
+| TClosure 
 
 (*definiamo la funzione che prende il type*)
 let gettype (x:evT):tname = 
@@ -67,6 +77,7 @@ match x with
         | Int(n)-> TInt
         | Bool(b) -> TBool
         | String(s)-> TString
+        | Closure(f)-> TClosure
 
 let typecheck (t,typedescriptor:tname*evT):bool= 
 match t with 
@@ -157,6 +168,8 @@ let prog =
        Sum (Den "x", EInt 2)          (* e2: usa Den "x" che recupera Int 10 *)
   )
 
+let P_funzione = Fun ("x", Sum(Den("x"),EInt 1));
+
 
 (*Dove stiamo scrivendo questo programma in quale zona del nostro macchina astratta : Risposta su quaderno*)
 
@@ -190,6 +203,45 @@ match e with
                 let v1 = eval e1 emptyenv in (*guardare la semantica*) (* 1. eval restituisce un valore evT *)
                 let env_esteso = bind s x v1 in (* 2. Leghiamo la stringa x al valore v1 *)
                 eval e2 env_esteso  (* 3. Valutiamo e2 con il nuovo ambiente *)
+
+(*funzione *)
+| Fun (arg , ebody) -> Closure(arg, ebody, s )
+| Apply (  f ,argattuale) ->
+                (* recuperiamo il f_closure ovvero il tipo di ritorno della exp Fun*)
+                let f_closure = eval f s in 
+                match f_closure with 
+                (*proviamo il match con il tipo di ritorno : Closure *)
+                | Closure(argformale , ebody , fdecenv) -> 
+                (*valutiamo argomento attuale e scriviamo in aev *)
+                let aev = eval argattuale s in
+                (*ora legiamo con il funzione bind parametro formale e aev: valutato argattuale*)
+                let env_extend = bind  fdecenv argformale aev  in
+                (*ora valutiamo il corpo della funzione in ambiente env_esteso : scoping statico *)
+                eval ebody env_extend 
+                |_-> failwith "NO match"
+| Apply(_,_) -> failwith "No higher order funzione"
+
+(*
+        |Apply (Den(f),eArg) ->
+        (* Valutiamo f per ottenere la chiusura *)
+        let fclosure = eval f s in
+        (* Valutiamo il parametro attuale subito (Call-by-value) *)
+        let arg = eval eArg s in
+        match fclosure with
+        | Closure (x, ebody , dec_env)
+        (* Estendiamo l'ambiente della decisione (dec_env) legando x al valore del parametro attuale *)
+        let body_env = bind s x arg_val in
+        (*scoping DINAMICO*)
+        (* Valutiamo il corpo della funzione nell'ambiente esteso *)
+        eval body body_env
+        | _ -> failwith "Runtime Error: Tentativo di applicare un valore che non è una funzione"
+*)
+                
+
+
+
+
+
 
 
 
