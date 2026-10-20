@@ -24,16 +24,25 @@ type exp =
 | Let of ide*exp*exp
 | Fun of ide*exp 
 | Apply of ide *exp 
+(*appello Novembre 7  Pair , First , Second and ComposeApply*)
+(*definiamo espressione*)
+| Pair of exp*exp 
+|First of exp 
+|Second of exp 
+| ComposeApply of exp*exp (*prende il pair e argomento*)
+
 
 type evT = 
 | Int of int 
 | Bool of bool 
 | String of string 
-| Closure of ide * exp * env
+| Closure of ide * evT * env  (* deve essere evT perche il corpo della funzione si riduce poi al tipo evT* )
 (* Closure sia il tipo restituito dalla funzione : nome della funzione 
                                                  : il corpo della funzione 
                                                  : ambiente in cui definito la funzione*)
 
+(*definiamo il tipo di ritorno per Pair: restituisce tipo evT*evT  *)    
+| PairVal of evT*evT                                            
 
 
 
@@ -238,6 +247,32 @@ match e with
 *)
                 
 
+
+(*ora definiamo eval per 4 sintassi aggiunti *)
+
+| Pair(e1,e1)-> PairVal(e1,e2)
+
+| First(e) -> match (eval e s) with 
+              | Pair (v1,v2) -> v1
+              |_-> failwith "Error"
+| Second -> match (eval e s ) with 
+              | Pair ( v1,v2) -> v2 
+              |_-> failwith "Error"
+
+ComposeApply(ep,argAttuale) -> 
+                        let pairclosure = eval ep s in 
+                        match pairclosure with 
+                        | PairVal( Closure(argp1, fbody1, fdecenv1), Closure(argp2,fbody2,fdecenv2))->
+                        let argp1valutato = eval argp1 s in 
+                        (*binding tra argp1valutato e argAttuale in un nuovo ambiente*)
+                        let amb_new1 = bind fdecenv1 argAttuale argp1valutato in 
+                        let ris1 = eval fbody1 amb_new1
+                        (*binding tra ris1 e argp2 in nuovo ambiente*)
+                        let amb_new2 = bind amb_new1 ris1 argp2
+                        eval fbody2 amb_new2
+                        |_-> failwith"Error"
+
+| ComposeApply(_,_) -> failwith "No higher order funzione"
 
 
 
